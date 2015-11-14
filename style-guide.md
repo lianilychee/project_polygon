@@ -7,7 +7,7 @@ Style Guide
 2. We will build off the `dev` branch, which consists of generally working code that can be built off of.
 3. Individual work will be built on feature branches from `dev`.
 4. Only build on feature branches.
-5. Feature branches are all lowercase and separated by tacks.  Ex: coordinate-reconciliation
+5. Feature branches are all lowercase and separated by underscores.  Ex: coordinate_reconciliation
 6. When merging a branch, submit a pull request to be approved by another teammate.
 
 ***Code Style***
