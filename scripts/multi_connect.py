@@ -17,10 +17,10 @@ import termios
 
 def connect(ip, namespace, port):
     """
-    Use subprocess to call 'roslaunch neato_node bringup_multi.launch'
+    Use subprocess to call 'roslaunch project_polygon bringup_multi.launch'
     with the given parameters, return process so it can be killed later
     """
-    cmd = ['roslaunch', 'neato_node', 'bringup_multi.launch']
+    cmd = ['roslaunch', 'project_polygon', 'bringup_multi.launch']
     args = 'host:={} robot:={} receive_port:={}'.format(ip, namespace, port)
     cmd.extend(shlex.split(args))
 
