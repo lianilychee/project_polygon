@@ -44,6 +44,11 @@ class MultiController(object):
         self.x3 = config['robot3_xvel']
         self.x4 = config['robot4_xvel']
 
+        self.z1 = config['robot1_zang']
+        self.z2 = config['robot2_zang']
+        self.z3 = config['robot3_zang']
+        self.z4 = config['robot4_zang']
+
         # Must return config in callback
         return config
 
@@ -59,9 +64,17 @@ class MultiController(object):
         while not rospy.is_shutdown():
             # Publish each twist message
             twist1.linear.x = self.x1
+            twist1.angular.z = self.z1
+
             twist2.linear.x = self.x2
+            twist2.angular.z=self.z1
+
             twist3.linear.x = self.x3
+            twist3.angular.z =self.z3
+
             twist4.linear.x = self.x4
+            twist4.angular.z=self.z4
+
 
             self.pub1.publish(twist1)
             self.pub2.publish(twist2)
