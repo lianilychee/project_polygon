@@ -10,6 +10,7 @@
   <group ns="$(arg robot)">
     <include file="$(find neato_node)/launch/bringup_minimal.launch">
       <arg name="host" value="$(arg host)"/>
+      <arg name="robot" value="$(arg robot)"/>
     </include>
     <include file="$(find gscam)/examples/raspi_nodelet_udp.launch">
       <arg name="host" value="$(arg host)"/>
