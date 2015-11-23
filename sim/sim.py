@@ -6,13 +6,10 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-
 plt.ion()           # interactive mode
 plt.axis('equal')
 
-
 # global variables
-
 pos = np.array([    # bot pos
     (1.0, 1.0),
     (2.0, 3.0),
@@ -22,35 +19,27 @@ pos = np.array([    # bot pos
 ])
 vel = np.zeros(pos.shape)
 acc = np.zeros(pos.shape)
-
 tau = 0.1           # time step
-t = 0
-R = 1               # desired dist betw Bot and centroid
-L = R*2*math.sin(math.pi/len(pos))    # desired dist betw 2 bots
 centroid = (3, 0)
+R = 1               # desired dist betw Bot and centroid
 k_a = 0.08          # constant: betw other bots
 k_b = 0.2           # constant: acct for overshoot
 k_c = 0.08          # constant: betw centroid
-
-vel_threshold = 0.0001
 scan_threshold = 3  # how far a bot can "see"
 
+# show centroid region
 region = plt.Circle(centroid, R, color='r')
 plt.gcf().gca().add_artist(region)
-
 
 def euclid_dist(pt1, pt2):
     return math.sqrt((pt1[0] - pt2[0])**2 + (pt1[1] - pt2[1])**2)
 
-state = True
-
-while state:
-
+t = 0   # intialize time
+while True:
     pos_temp = np.zeros(pos.shape)
     vel_temp = np.zeros(pos.shape)
 
     for i in range(len(pos)):
-
         dci = euclid_dist(pos[i], centroid)    # dist betw Bot and centroid
 
         # x- and y-accel of bot i to bot j
@@ -61,27 +50,11 @@ while state:
         acc_xij = 0.0
         acc_yij = 0.0
 
-        # determine how many fellow bots are within range
-        scan_threshold
-
-        bot_temp = []
-
-        # for k in range(len(pos)):
-        #     if (i != k) and (euclid_dist(pos[i], pos[k]) < scan_threshold):
-        #         L = 
-        #         bot_count += bot_count
-            
-# L = R*2*math.sin(math.pi/len(pos))    # desired dist betw 2 bots
-
+        # find bots within sensing range and calculate L
         n = sum(1 for k in pos if euclid_dist(k, pos[i]) <= scan_threshold)
-
-        L = R*2*math.sin(math.pi/n)    # desired dist betw 2 bots
-
-        print L
-
+        L = 2 * R * math.sin(math.pi/n)
 
         for j in range(len(pos)):
-
             dij = euclid_dist(pos[i], pos[j])    # dist betw Bot and bot 
 
             # calc x- and y-accel betw Bot and bot j
@@ -91,30 +64,18 @@ while state:
 
         # update accels
         acc[i] = (acc_xci + acc_xij - k_b*vel[i][0], acc_yci + acc_yij - k_b*vel[i][1])
-        
-        vel_temp[i] = vel[i] + acc[i] * tau 
-
+        vel_temp[i] = vel[i] + acc[i] * tau
         pos_temp[i] = pos[i] + vel[i] * tau
 
-
-        # if abs(vel[i][0] * tau) < threshold and abs(vel[i][1] * tau) < threshold:
-        # # if [abs(pos_temp[i] - pos[i]) > threshold]:
-        #     state = False
-
-
     vel_temp[vel_temp > 0.5] = 0.5  # set neato vel upper bound
-    # vel_temp[vel_temp < 0.001] = 0  # set neato vel lower bound
+
+    # update positions and velocities
     pos = pos_temp
     vel = vel_temp
 
-
-
-
-    # print vel
-
-    # plt.plot([p[0] for p in pos], [p[1] for p in pos], "o")
+    # plot positions
     plt.plot(pos[:,0], pos[:,1], "o")
-
     plt.pause(0.0001)
 
+    # increment time
     t += tau
