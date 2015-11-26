@@ -23,7 +23,7 @@ class Agent:
         rospy.init_node('Agent') # TODO: remember to change name for multiple bots
         self.pub = rospy.Publisher('cmd_vel', Twist, queue_size = 10)
         self.command = Twist()
-        rospy.Subscriber('/packet', packet, self.assign_data) # remember to change name for multiple bots # TODO uncomment
+        # rospy.Subscriber('/packet', packet, self.assign_data) # remember to change name for multiple bots # TODO uncomment
         self.sense_range=3
         self.tau=0.1
         self.assign_data()
@@ -34,26 +34,25 @@ class Agent:
         Unpack data packet and assign to self.attributes.
         """
 
-        # print 'assign_data()'
-        # self.centroid = (5,0)
-        # self.k_a = 0.8
-        # self.k_b = 0.2
-        # self.k_c = 0.8
+        self.centroid = (5,0)
+        self.k_a = 0.8
+        self.k_b = 0.2
+        self.k_c = 0.8
         # self.bot_qty = 1  #number of robots existing total
         # self.bot_pos = np.array([(0,0)])  # list of positions
-        # print self.bot_pos
-        # self.R = 2
+        print self.bot_pos
+        self.R = 2
 
         self.vel = np.zeros(self.bot_pos.shape)
         self.acc = np.zeros(self.bot_pos.shape)
 
-        self.centroid = data.centroid
-        self.k_a = data.k_a
-        self.k_b = data.k_b
-        self.k_c = data.k_c
+        # self.centroid = data.centroid
+        # self.k_a = data.k_a
+        # self.k_b = data.k_b
+        # self.k_c = data.k_c
         self.bot_qty = data.n  #number of robots existing total
         self.bot_pos = data.others  # list of positions
-        self.R = data.R
+        # self.R = data.R
 
 
     def calc_vels(self):
@@ -112,9 +111,9 @@ class Agent:
         angle=np.angle(res_vel)
         magnitude=abs(res_vel)
 
-        angle_diff=abs(angle-current_angle) #for now, assume current angle is consistant with world
+        # angle_diff=abs(angle-current_angle) #for now, assume current angle is consistant with world # TODO uncomment
 
-        # angle_diff=abs(angle-0) #for now, assume current angle is consistant with world
+        angle_diff=abs(angle-0) #for now, assume current angle is consistant with world
 
         # angle_diff = 5
 
