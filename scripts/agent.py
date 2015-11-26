@@ -11,6 +11,7 @@ from nav_msgs.msg import Odometry
 from project_polygon.msg import Packet
 import tf
 import numpy as np
+import math
 import helper_funcs as hp
 
 # assume that we are receiving an info packet from Omni
@@ -21,14 +22,16 @@ class Agent:
     def __init__(self):
         rospy.init_node('Agent') # TODO: remember to change name for multiple bots
 
-        self.command = Twist()
+        # previous state for velocity calculation
         self.last_stamp = rospy.Time.now()
         self.xy_vel = np.array([0.0, 0.0])
 
+        # odom data
         self.x = None
         self.y = None
         self.yaw = None
 
+        # packet data
         self.stamp = None
         self.centroid = None
         self.R = None
@@ -37,6 +40,11 @@ class Agent:
         self.k_c = None
         self.bot_qty = None
         self.bot_pos = None
+
+        # cmd_vel command and proportional constants
+        self.command = Twist()
+        self.k_px = 1.0
+        self.k_pz = 1.0
 
         rospy.Subscriber('/packet', Packet, self.assign_data) # remember to change names for multiple bots
         rospy.Subscriber('/odom', Odometry, self.assign_odom)
@@ -48,13 +56,13 @@ class Agent:
         """
         pose = msg.pose.pose
         self.x, self.y, self.yaw = hp.convert_pose_to_xy_and_theta(pose)
-        print self.yaw
 
+    # def assign_data(self):
     def assign_data(self, data):
         """
         Unpack data packet and assign to self.attributes.
         """
-        self.stamp = data.stamp
+        self.stamp = data.header.stamp
         self.centroid = data.centroid
         self.R = data.R
         self.k_a = data.k_a
@@ -80,19 +88,20 @@ class Agent:
         # calculate L based on how many bots it knows about
         L = 2 * self.R * math.sin(math.pi/self.bot_qty)
 
-        for j in range(len(self.bot_qty)):
-            dij = euclid_dist((self.x, self.y), self.bot_pos[j])    # dist betw Bot and bot 
+        for j in range(len(self.bot_pos)):
+            botj_xy = (self.bot_pos[j].position.x, self.bot_pos[j].position.y)
+            dij = hp.euclid_dist((self.x, self.y), botj_xy)    # dist betw Bot and bot 
 
             # calc x- and y-accel betw Bot and bot j
             if dij <= L:
-                acc_xij += -self.k_a * (dij - L) * (1/dij) * (self.x - self.bot_pos[j][0])
-                acc_yij += -self.k_a * (dij - L) * (1/dij) * (self.y - self.bot_pos[j][1])
+                acc_xij += -self.k_a * (dij - L) * (1/dij) * (self.x - botj_xy[0])
+                acc_yij += -self.k_a * (dij - L) * (1/dij) * (self.y - botj_xy[1])
 
         # update accel
-        acc = (acc_xci + acc_xij - k_b*self.xy_vel[0], acc_yci + acc_yij - self.k_b*self.xy_vel[1])
+        acc = np.array((acc_xci + acc_xij - self.k_b*self.xy_vel[0], acc_yci + acc_yij - self.k_b*self.xy_vel[1]))
 
         # update vel using time since last update as timestep
-        tau = (self.stamp - self.last_stamp).to_secs()
+        tau = (self.stamp - self.last_stamp).to_sec()
         self.last_stamp = self.stamp
         self.xy_vel = self.xy_vel + (acc * tau)    # new velocity = old velocity + (acceleration * timestep)
 
@@ -106,14 +115,14 @@ class Agent:
         if self.stamp is None:
             return
 
-        self.calc_vels()
+        self.calc_vels()    # sets self.xy_vel
         res_vel = complex(*self.xy_vel) # using complex number to represent vector
-        angle = np.angle(res_vel)
         magnitude = abs(res_vel)
-
-        angle_diff = hp.angle_diff(self.yaw, angle)    #for now, assume current angle is consistant with world
-        self.command.linear.x = magnitude
-        self.command.angular.z = angle_diff
+        angle = np.angle(res_vel)
+        angle_diff = hp.angle_diff(angle, self.yaw)    #for now, assume current angle is consistant with world
+ 
+        self.command.linear.x = self.k_px * magnitude
+        self.command.angular.z = self.k_pz * angle_diff
         self.pub.publish(self.command)
 
     def run(self):
