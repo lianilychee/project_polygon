@@ -31,7 +31,7 @@ class Agent:
     # def assign_data(self):
     def assign_data(self, data):
         """
-        Unpack data packet and assign to self.attributes.
+        Unpack data packet and assign to self.<attr>
         """
 
         self.centroid = (5,0)

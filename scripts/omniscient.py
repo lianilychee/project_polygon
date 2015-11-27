@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 """
-Listens to odom topics of all agents.  Reconcile agent odoms to world coordinate
-system.  Publish location of neighbor agents if agents are within a certain 
-distance of each other.
+Instantiates all agents, and knows all information of regarding all agents.  Reconcile agent base_links to world coordinate frame.  Sends packet information to each agent for individual path-planning.
 """
 
 import rospyfrom sensor_msgs.msg import LaserScan, Image
@@ -11,21 +9,26 @@ from geometry_msgs.msg import Twist, PoseWithCovariance, Pose, Point, Vector3
 from sensor_msgs.msg import LaserScan, Image
 import tf
 import numpy as np
+import math
+import agent
 
 class Omni:
-    def __init__(self):
+    def __init__(self, n):
+        """
+        n = number of bots in existence
+        """
 
-        ### ROS INITIALIZATION ###
         rospy.init_node('omniscient')
 
-        # what am i subscribing to?
-        self.Subscriber('/robot1/odom')
-        self.Subscriber('/robot1/bump')
-        self.Subscriber('/robot2/odom')
-        self.Subscriber('/robot2/bump')
-        self.Subscriber('/robot3/odom')
-        self.Subscriber('/robot3/bump')
-        # what am I publiishing to?
+        # subscribe to all bots
+        for i in range(n):
+            print '/robot'+n+'/odom'
+            self.Subscriber('/robot'+n+'/odom')
+
+
+        #put the position of robots in packet, make it in a numpy array.
+
+
 
     def deploy(self):
         """
