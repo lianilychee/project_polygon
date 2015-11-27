@@ -19,8 +19,11 @@ import helper_funcs as hp
 #   number of bots within region, other bot locations
 
 class Agent:
-    def __init__(self):
-        rospy.init_node('Agent') # TODO: remember to change name for multiple bots
+    def __init__(self, ns=''):
+        """
+        Initialize node. Takes in a namespace (e.g. 'robot1')
+        """
+        rospy.init_node('agent', anonymous=True)
 
         # previous state for velocity calculation
         self.last_stamp = rospy.Time.now()
@@ -46,9 +49,9 @@ class Agent:
         self.k_px = 1.0
         self.k_pz = 1.0
 
-        rospy.Subscriber('/packet', Packet, self.assign_data) # remember to change names for multiple bots
-        rospy.Subscriber('/odom', Odometry, self.assign_odom)
-        self.pub = rospy.Publisher('cmd_vel', Twist, queue_size = 10)
+        rospy.Subscriber('{}/packet'.format(ns), Packet, self.assign_data)
+        rospy.Subscriber('{}/odom'.format(ns), Odometry, self.assign_odom)
+        self.pub = rospy.Publisher('{}/cmd_vel'.format(ns), Twist, queue_size = 10)
 
     def assign_odom(self, msg):
         """
@@ -111,8 +114,8 @@ class Agent:
         """
         Move the robot using velocities from calc_vels()
         """
-        # do nothing if no packet has been received yet
-        if self.stamp is None:
+        # do nothing if no packet or odom data has been received yet
+        if self.stamp is None or self.x is None:
             return
 
         self.calc_vels()    # sets self.xy_vel
@@ -132,5 +135,5 @@ class Agent:
             r.sleep()
 
 if __name__ == '__main__':
-    node = Agent()
+    node = Agent('robot1')
     node.run()
