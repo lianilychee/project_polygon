@@ -9,14 +9,14 @@ import sys
 import math
 import numpy as np
 
-def get_key():
+def get_key(settings):
     """
     Return pressed key
     """
     tty.setraw(sys.stdin.fileno())
     select.select([sys.stdin], [], [], 0)
     key = sys.stdin.read(1)
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, termios.tcgetattr(sys.stdin))
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
     return key
 
 def euclid_dist(pt1, pt2):
