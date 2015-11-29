@@ -33,6 +33,7 @@ class Omni:
         self.pub=[]
         for i in range(n):
             rospy.Subscriber('/robot{}/odom'.format(i), Odometry, self.get_pos, callback_args=i)
+            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=10))
 
         #set all constants
         self.centroid = (5,0)
@@ -41,7 +42,7 @@ class Omni:
         self.k_c = 0.8
         self.R = 2
 
-        self.scan_threshold=2 #the maximum scan radius that each agent can scan
+        self.scan_threshold = 2 #the maximum scan radius that each agent can scan
 
         self.bot_pos = [None]*n  #create empty lint with a size of num of robots. 
 
@@ -51,7 +52,7 @@ class Omni:
         """
         call back function to get the position of robots to deploy to the agents.
         """
-        self.bot_pos[callback_args]=msg.pose.pose
+        self.bot_pos[callback_args] = msg.pose.pose
 
 
     #might need converstion to (x,y) tuple in this function?
@@ -59,8 +60,8 @@ class Omni:
         """
         neighbor_bots takes in the bot's callback args and position of other robotss
         Then it returns list of position of all other rots with in radius R """
-        copy_bots_pos=[deepcopy(i) for i in bots_pos] #copy it before the bot_pos gets updated,avoiding threading issue
-        neighbors=[]
+        copy_bots_pos = [deepcopy(i) for i in bots_pos] #copy it before the bot_pos gets updated,avoiding threading issue
+        neighbors = []
 
         # TODO: UNCOMMENT WHEN OTHER ARGS GET PUT IN
         # for i in len(bots_pos): #assume args is just number for now
@@ -79,7 +80,7 @@ class Omni:
         #use helper function to retuurn a list of positions of robots that are within
         #R should publish this information each time with the robot's callback_args
         #where to publish??
-        self.bots_within_R=self.neighbor_bots(self.bot_pos,callback_args)
+        self.bots_within_R = self.neighbor_bots(self.bot_pos,callback_args)
 
         my_packet = Packet(
             centroid = self.centroid,
