@@ -1,134 +1,139 @@
 #!/usr/bin/env python
 
 """
-Listens to odom topic.  Reconcile agent odoms to world coordinate
-system.  Publish location of neighbor agents if agents are within a certain 
-distance of each other.
+Listens for packets from the Omni node. Calculates its velocity based on the
+information in the packets.
 """
 
 import rospy
-from sensor_msgs.msg import LaserScan, Image
-from geometry_msgs.msg import Twist, PoseWithCovariance, Pose, Point, Vector3
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
+from project_polygon.msg import Packet
 import tf
 import numpy as np
 import math
 import helper_funcs as hp
 
 # assume that we are receiving an info packet from Omni
-# info packet has: R, centroid, self.k_a, k_b, k_c, location, # of bots within region + their locations
+# info packet has: R, centroid, k_a, k_b, k_c, location,
+#   number of bots within region, other bot locations
 
 class Agent:
-    def __init__(self):
+    def __init__(self, ns=''):
+        """
+        Initialize node. Takes in a namespace (e.g. 'robot1')
+        """
+        rospy.init_node('agent', anonymous=True)
 
-        rospy.init_node('Agent') # TODO: remember to change name for multiple bots
-        self.pub = rospy.Publisher('cmd_vel', Twist, queue_size = 10)
+        # previous state for velocity calculation
+        self.last_stamp = rospy.Time.now()
+        self.xy_vel = np.array([0.0, 0.0])
+
+        # odom data
+        self.x = None
+        self.y = None
+        self.yaw = None
+
+        # packet data
+        self.stamp = None
+        self.centroid = None
+        self.R = None
+        self.k_a = None
+        self.k_b = None
+        self.k_c = None
+        self.bot_qty = None
+        self.bot_pos = None
+
+        # cmd_vel command and proportional constants
         self.command = Twist()
-        # rospy.Subscriber('/packet', packet, self.assign_data) # remember to change name for multiple bots # TODO uncomment
-        self.sense_range=3
-        self.tau=0.1
-        self.assign_data()
+        self.k_px = 1.0
+        self.k_pz = 1.0
+
+        rospy.Subscriber('{}/packet'.format(ns), Packet, self.assign_data)
+        rospy.Subscriber('{}/odom'.format(ns), Odometry, self.assign_odom)
+        self.pub = rospy.Publisher('{}/cmd_vel'.format(ns), Twist, queue_size = 10)
+
+    def assign_odom(self, msg):
+        """
+        Save x, y, and yaw from odometry data
+        """
+        pose = msg.pose.pose
+        self.x, self.y, self.yaw = hp.convert_pose_to_xy_and_theta(pose)
 
     # def assign_data(self):
     def assign_data(self, data):
         """
         Unpack data packet and assign to self.<attr>
         """
-
-        self.centroid = (5,0)
-        self.k_a = 0.8
-        self.k_b = 0.2
-        self.k_c = 0.8
-        # self.bot_qty = 1  #number of robots existing total
-        # self.bot_pos = np.array([(0,0)])  # list of positions
-        print self.bot_pos
-        self.R = 2
-
-        self.vel = np.zeros(self.bot_pos.shape)
-        self.acc = np.zeros(self.bot_pos.shape)
-
-        # self.centroid = data.centroid
-        # self.k_a = data.k_a
-        # self.k_b = data.k_b
-        # self.k_c = data.k_c
-        self.bot_qty = data.n  #number of robots existing total
-        self.bot_pos = data.others  # list of positions
-        # self.R = data.R
-
+        self.stamp = data.header.stamp
+        self.centroid = data.centroid
+        self.R = data.R
+        self.k_a = data.k_a
+        self.k_b = data.k_b
+        self.k_c = data.k_c
+        self.bot_qty = data.n  # number of robots it knows about (including self)
+        self.bot_pos = data.others  # list of positions (excluding self)
 
     def calc_vels(self):
         """
         Calculate velocities - resultant, linear, angular - from data packet attributes.
         """
+        dci = hp.euclid_dist((self.x, self.y), self.centroid)    # dist betw Bot and centroid
 
-        pos_temp = np.zeros(self.bot_pos.shape)
-        vel_temp = np.zeros(self.bot_pos.shape)
+        # x- and y-accel of Bot to centroid
+        acc_xci = -self.k_c * (dci - self.R) * (1/dci) * (self.x - self.centroid[0])
+        acc_yci = -self.k_c * (dci - self.R) * (1/dci) * (self.y - self.centroid[1])
 
-        print 'calc_vels()'
-        for i in range(self.bot_qty):
-            dci = hp.euclid_dist(self.bot_pos[i], self.centroid)    # dist betw Bot and centroid
+        # define x- and y-accel betw Bot and other bots
+        acc_xij = 0.0
+        acc_yij = 0.0
 
-            # x- and y-accel of bot i to bot j
-            acc_xci = -self.k_c * (dci - self.R) * (1/dci) * (self.bot_pos[i][0] - self.centroid[0])
-            acc_yci = -self.k_c * (dci - self.R) * (1/dci) * (self.bot_pos[i][1] - self.centroid[1])
+        # calculate L based on how many bots it knows about
+        L = 2 * self.R * math.sin(math.pi/self.bot_qty)
 
-            # define x- and y-accel betw Bot and other bots
-            acc_xij = 0.0
-            acc_yij = 0.0
+        for j in range(len(self.bot_pos)):
+            botj_xy = (self.bot_pos[j].position.x, self.bot_pos[j].position.y)
+            dij = hp.euclid_dist((self.x, self.y), botj_xy)    # dist betw Bot and bot 
 
-            # find bots within sensing range and calculate L
-            n = sum(1 for k in self.bot_pos if hp.euclid_dist(k, self.bot_pos[i]) <= self.sense_range)
-            L = 2 * self.R * math.sin(math.pi/self.bot_qty)
+            # calc x- and y-accel betw Bot and bot j
+            if dij <= L:
+                acc_xij += -self.k_a * (dij - L) * (1/dij) * (self.x - botj_xy[0])
+                acc_yij += -self.k_a * (dij - L) * (1/dij) * (self.y - botj_xy[1])
 
-            for j in range(self.bot_qty):
-                dij = hp.euclid_dist(self.bot_pos[i], self.bot_pos[j])    # dist betw Bot and bot 
+        # update accel
+        acc = np.array((acc_xci + acc_xij - self.k_b*self.xy_vel[0], acc_yci + acc_yij - self.k_b*self.xy_vel[1]))
 
-                # calc x- and y-accel betw Bot and bot j
-                if (i != j) and (dij <= L):
-                    acc_xij += -self.k_a * (dij - L) * (1/dij) * (self.bot_pos[i][0] - self.bot_pos[j][0])
-                    acc_yij += -self.k_a * (dij - L) * (1/dij) * (self.bot_pos[i][1] - self.bot_pos[j][1])
+        # update vel using time since last update as timestep
+        tau = (self.stamp - self.last_stamp).to_sec()
+        self.last_stamp = self.stamp
+        self.xy_vel = self.xy_vel + (acc * tau)    # new velocity = old velocity + (acceleration * timestep)
 
-            # update accels
-            self.acc[i] = (acc_xci + acc_xij - self.k_b*self.vel[i][0], acc_yci + acc_yij - self.k_b*self.vel[i][1])
-            vel_temp[i] = self.vel[i] + self.acc[i] * self.tau
-            pos_temp[i] = self.bot_pos[i] + self.vel[i] * self.tau
-
-        vel_temp[vel_temp > 0.5] = 0.5  # set neato vel upper bound
-
-        # update positions and velocities
-        self.bot_pos = pos_temp
-        self.vel = vel_temp
+        self.xy_vel[self.xy_vel > 0.5] = 0.5  # set neato vel upper bound
 
     def move_bot(self):
         """
-        move the robot to its new position using velocities from calc_vels()
+        Move the robot using velocities from calc_vels()
         """
-        print 'move_bot()'
-        self.calc_vels()
+        # do nothing if no packet or odom data has been received yet
+        if self.stamp is None or self.x is None:
+            return
 
-        res_vel=self.vel[0][0]+1j*self.vel[0][1]  #using complex number notation
-
-        # res_vel=self.vel[0]+1j*self.vel[1]  #using complex number notation
-        angle=np.angle(res_vel)
-        magnitude=abs(res_vel)
-
-        # angle_diff=abs(angle-current_angle) #for now, assume current angle is consistant with world # TODO uncomment
-
-        angle_diff=abs(angle-0) #for now, assume current angle is consistant with world
-
-        # angle_diff = 5
-
-        print "move bot()"
-        self.command.linear.x = res_vel
-        self.command.angular.z = angle_diff
+        self.calc_vels()    # sets self.xy_vel
+        res_vel = complex(*self.xy_vel) # using complex number to represent vector
+        magnitude = abs(res_vel)
+        angle = np.angle(res_vel)
+        angle_diff = hp.angle_diff(angle, self.yaw)    #for now, assume current angle is consistant with world
+ 
+        self.command.linear.x = self.k_px * magnitude
+        self.command.angular.z = self.k_pz * angle_diff
         self.pub.publish(self.command)
 
     def run(self):
         r = rospy.Rate(5)
         while not rospy.is_shutdown():
-            print 'run()'
-            r.sleep()
             self.move_bot()
+            r.sleep()
 
 if __name__ == '__main__':
-    node = Agent()
+    node = Agent('robot1')
     node.run()
