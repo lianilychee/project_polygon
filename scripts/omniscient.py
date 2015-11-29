@@ -4,10 +4,12 @@
 Instantiates all agents, and knows all information of regarding all agents.  Reconcile agent base_links to world coordinate frame.  Sends packet information to each agent for individual path-planning.
 """
 
-import rospyfrom sensor_msgs.msg import LaserScan, Image
+import rospy
+from sensor_msgs.msg import LaserScan, Image
 from geometry_msgs.msg import Twist, PoseWithCovariance, Pose, Point, Vector3
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import LaserScan, Image
+from sensor_msgs.msg import LaserScan, Image 
+from project_polygon.msg import Packet
 import tf
 import numpy as np
 import math
@@ -23,10 +25,9 @@ class Omni:
         rospy.init_node('omniscient')
 
         # # subscribe to all bots Will use it later when we figure out the multiple robot problem
-        # for i in range(n):
-        #     print '/robot'+n+'/odom'
-        #     self.Subscriber('/robot'+n+'/odom')
-
+        self.pub=[]
+        for i in range(n):
+            rospy.Subscriber('/robot{}/odom'.format(i), Odometry, self.get_pos, callback_args=i)
 
         #set all constants
         self.centroid = (5,0)
@@ -34,20 +35,15 @@ class Omni:
         self.k_b = 0.2
         self.k_c = 0.8
         self.R = 2
-        self.bot_qty = n  #number of robots existing total
-        self.bot_pos = np.zeros((n,3))  #create empty numpy array size of num of robots. 
 
-        #subscribe to the robot to get its position in world coordinate frame
-        self.pos_sub=rospy.Subscriber('/robot1/odom',Odometry,self.get_pos())
+        self.bot_pos = [None]*n  #create empty lint with a size of num of robots. 
 
 
-    def get_pos(self,msg):
+    def get_pos(self,msg,callback_args):
         """
         call back function to get the position of robots
         """
-
-        self.bot_pos=msg.pose.pose
-
+        self.bot_pos[callback_args]=msg.pose.pose
 
 
     def deploy(self):
@@ -64,3 +60,8 @@ class Omni:
 # reconcile agent odoms to world coordinate systems
 
 # publish location of neighbor agents
+
+if  __name__=='__main__':
+	omni=Omni(4)
+	while not rospy.is_shutdown():
+		pass
