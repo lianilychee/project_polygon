@@ -11,9 +11,8 @@ Example: python multi_connect.py 17.200 17.204
 import subprocess
 import shlex
 import sys
-import tty
-import select
 import termios
+import helper_funcs as hp
 
 def connect(ip, namespace, port):
     """
@@ -27,19 +26,12 @@ def connect(ip, namespace, port):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc
 
-def getKey():
-    tty.setraw(sys.stdin.fileno())
-    select.select([sys.stdin], [], [], 0)
-    key = sys.stdin.read(1)
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
-    return key
-
 
 if __name__ == '__main__':
     ip_addrs = sys.argv[1:]
 
     processes = []
-    robot_num = 1
+    robot_num = 0
     for ip in ip_addrs: 
         # Fill in prefix if necessary
         if ip.count('.') == 1:
@@ -62,7 +54,7 @@ if __name__ == '__main__':
     settings = termios.tcgetattr(sys.stdin)
     key = None
     while key != '\x03':
-        key = getKey()
+        key = hp.get_key(settings)
 
     # Terminate the connections
     for proc in processes:
