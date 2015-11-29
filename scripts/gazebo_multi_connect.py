@@ -10,6 +10,7 @@ import subprocess
 import shlex
 import sys
 import time
+import termios
 import helper_funcs as hp
 
 def create_world():
@@ -62,9 +63,10 @@ if __name__ == '__main__':
     print 'Ctrl-C to quit and close Gazebo'
 
     # Wait for Ctrl-C
+    settings = termios.tcgetattr(sys.stdin)
     key = None
     while key != '\x03':
-        key = hp.get_key()
+        key = hp.get_key(settings)
 
     # Terminate the connections
     for proc in processes:
