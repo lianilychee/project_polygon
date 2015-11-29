@@ -12,6 +12,7 @@ TODO: Going to just assume that this is a single robot for now...
 """
 
 import rospy
+from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan, Image
 from geometry_msgs.msg import Twist, PoseWithCovariance, Pose, Point, Vector3
 import tf
@@ -21,7 +22,8 @@ import agent
 from project_polygon.msg import Packet
 
 class Omni:
-    def __init__(self, n):
+    # def __init__(self, n):
+    def __init__(self):
         """
         Initialize node
         n = number of bots in existence
@@ -29,19 +31,17 @@ class Omni:
 
         rospy.init_node('omniscient')
 
-        # subscribe to all bots
-        for i in range(n):
-            print '/robot'+n+'/odom'
-            self.Subscriber('/robot'+n+'/odom')
+        rospy.Subscriber('/robot1/odom', Odometry, self.send_pkt)
 
+        print 'init()'
 
         #put the position of robots in packet, make it in a numpy array.
 
 
         # publisher
-        self.pkt_pub = rospy.Publisher('robot1/packet', Packet, queue_size=10)
+        self.pub_pkt = rospy.Publisher('robot1/packet', Packet, queue_size=10)
 
-        # packet vals
+        # packet values
         self.centroid = [2.0, 0.0]  # centroid location
         self.R = 1.0                # formation radius
         self.k_a = 0.08             # bot-bot constant
@@ -55,8 +55,7 @@ class Omni:
             Pose(position=Point(x=2+math.sqrt(2)/2, y=-math.sqrt(2)/2))
         ]
 
-        self.positions = # blank dictionary, to be filled later
-
+        # self.positions = # blank dictionary, to be filled later
 
 
     def id_neighbors(self):
@@ -66,10 +65,12 @@ class Omni:
         pass
 
 
-    def define_pkt(self):
+    def send_pkt(self, msg):
         """
-        define packet contents
+        define packet contents, then publish to appropriate topic
         """
+
+        # print msg.pose.pose
         
         my_packet = Packet(
             centroid = self.centroid,
@@ -81,12 +82,17 @@ class Omni:
             others = self.others
         )
 
+        my_packet.header.stamp = rospy.Time.now()
+        self.pub_pkt.publish(my_packet)
+
+
     def run(self):
+        # pass
         r = rospy.Rate(5)
         while not rospy.is_shutdown():
-            my_packet.header.stamp = rospy.Time.now()
-            self.pub.publish(my_packet)
+            # self.send_pkt() # needs callback args to determine which topic to publish to
             r.sleep()
+
 
 if __name__ == '__main__':
     node = Omni()
