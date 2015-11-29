@@ -10,9 +10,7 @@ import subprocess
 import shlex
 import sys
 import time
-import tty
-import select
-import termios
+import helper_funcs as hp
 
 def create_world():
     """
@@ -37,13 +35,6 @@ def spawn_agent(namespace, x, y):
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc
-
-def getKey():
-    tty.setraw(sys.stdin.fileno())
-    select.select([sys.stdin], [], [], 0)
-    key = sys.stdin.read(1)
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
-    return key
 
 
 if __name__ == '__main__':
@@ -70,11 +61,10 @@ if __name__ == '__main__':
     print 'Please wait for all agents to spawn before running any commands'
     print 'Ctrl-C to quit and close Gazebo'
 
-    # Wait for Ctrl-C 
-    settings = termios.tcgetattr(sys.stdin)
+    # Wait for Ctrl-C
     key = None
     while key != '\x03':
-        key = getKey()
+        key = hp.get_key()
 
     # Terminate the connections
     for proc in processes:
