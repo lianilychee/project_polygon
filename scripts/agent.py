@@ -19,9 +19,9 @@ import helper_funcs as hp
 #   number of bots within region, other bot locations
 
 class Agent:
-    def __init__(self, ns=''):
+    def __init__(self, i):
         """
-        Initialize node. Takes in a namespace (e.g. 'robot1')
+        Initialize node. Takes in an index (e.g. '1')
         """
         rospy.init_node('agent', anonymous=True)
 
@@ -30,6 +30,7 @@ class Agent:
         self.xy_vel = np.array([0.0, 0.0])
 
         # odom data
+        self.dy = i #for makeshift world odom
         self.x = None
         self.y = None
         self.yaw = None
@@ -49,9 +50,9 @@ class Agent:
         self.k_px = 1.0
         self.k_pz = 1.0
 
-        rospy.Subscriber('{}/packet'.format(ns), Packet, self.assign_data)
-        rospy.Subscriber('{}/odom'.format(ns), Odometry, self.assign_odom)
-        self.pub = rospy.Publisher('{}/cmd_vel'.format(ns), Twist, queue_size = 10)
+        rospy.Subscriber('robot{}/packet'.format(i), Packet, self.assign_data)
+        rospy.Subscriber('robot{}/odom'.format(i), Odometry, self.assign_odom)
+        self.pub = rospy.Publisher('robot{}/cmd_vel'.format(i), Twist, queue_size = 10)
 
     def assign_odom(self, msg):
         """
@@ -59,8 +60,8 @@ class Agent:
         """
         pose = msg.pose.pose
         self.x, self.y, self.yaw = hp.convert_pose_to_xy_and_theta(pose)
+        self.y += self.dy
 
-    # def assign_data(self):
     def assign_data(self, data):
         """
         Unpack data packet and assign to self.<attr>
@@ -135,5 +136,7 @@ class Agent:
             r.sleep()
 
 if __name__ == '__main__':
-    node = Agent('robot1')
+    import sys
+    i = int(sys.argv[1])
+    node = Agent(i)
     node.run()
