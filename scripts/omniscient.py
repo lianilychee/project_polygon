@@ -28,12 +28,6 @@ class Omni:
 
         rospy.init_node('omniscient')
 
-        # subscribe to all bots and create packet publishers for each
-        self.pub = []
-        for i in range(n):
-            rospy.Subscriber('/robot{}/odom'.format(i), Odometry, self.get_pos, callback_args=i)
-            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=10))
-
         # set all constants
         self.centroid = (5.0, 0.0)
         self.k_a = 0.8
@@ -46,6 +40,12 @@ class Omni:
         self.bot_pos = [None] * n   # create empty list with a size of num of robots 
         self.bot_pos_copy = [None] * n  # copy of bot positions to guard against threading shenanigans
 
+        # subscribe to all bots and create packet publishers for each
+        self.pub = []
+        for i in range(n):
+            rospy.Subscriber('/robot{}/odom'.format(i), Odometry, self.get_pos, callback_args=i)
+            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=10))
+
     def get_pos(self, msg, callback_args):
         """
         call back function to get the position of robots to deploy to the agents.
@@ -54,15 +54,15 @@ class Omni:
         pose.position.y += callback_args
         self.bot_pos[callback_args] = pose
 
-    def neighbor_bots(i):
+    def neighbor_bots(self , i):
         """
         Take in a bot index and returns a list of Poses for all
         other bots within self.sensing_radius
         """
         neighbors = []
-        for j in len(self.bots_pos_copy):
-            if (j != i) and (hp.pose_euclid_dist(self.bots_pos_copy[i], self.bots_pos_copy[j]) <= self.sensing_radius):
-                neighbors.append(copy_bots_pos[i])
+        for j in range(len(self.bot_pos_copy)):
+            if (j != i) and (hp.pose_euclid_dist(self.bot_pos_copy[i], self.bot_pos_copy[j]) <= self.sensing_radius):
+                neighbors.append(self.bot_pos_copy[j])
 
         return neighbors
 
@@ -89,9 +89,10 @@ class Omni:
         # pass
         r = rospy.Rate(5)
         while not rospy.is_shutdown():
-            self.bot_pos_copy = deepcopy(self.bot_pos)
-            for i in range(len(self.bot_pos)):
-                self.send_pkt(i)
+            if not None in self.bot_pos:
+                self.bot_pos_copy = deepcopy(self.bot_pos)
+                for i in range(len(self.bot_pos)):
+                    self.send_pkt(i)
             r.sleep()
 
 
