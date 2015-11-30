@@ -21,66 +21,56 @@ from project_polygon.msg import Packet
 
 
 class Omni:
-    # def __init__(self, n):
-    def __init__(self):
+    def __init__(self, n):
         """
         Omni init class sets the variables, gets the robots' position, and publishes to packet for instances of Agent to subscribe to. 
         """
 
         rospy.init_node('omniscient')
 
-        # # subscribe to all bots Will use it later when we figure out the multiple robot problem
-        self.pub=[]
+        # subscribe to all bots and create packet publishers for each
+        self.pub = []
         for i in range(n):
             rospy.Subscriber('/robot{}/odom'.format(i), Odometry, self.get_pos, callback_args=i)
             self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=10))
 
-        #set all constants
-        self.centroid = (5,0)
+        # set all constants
+        self.centroid = (5.0, 0.0)
         self.k_a = 0.8
         self.k_b = 0.2
         self.k_c = 0.8
         self.R = 2
 
-        self.scan_threshold = 2 #the maximum scan radius that each agent can scan
+        self.sensing_radius = 5 # sensing radius of each robot
 
-        self.bot_pos = [None]*n  #create empty lint with a size of num of robots. 
+        self.bot_pos = [None] * n   # create empty list with a size of num of robots 
+        self.bot_pos_copy = [None] * n  # copy of bot positions to guard against threading shenanigans
 
-
-    def get_pos(self,msg,callback_args):
-
+    def get_pos(self, msg, callback_args):
         """
         call back function to get the position of robots to deploy to the agents.
         """
-        self.bot_pos[callback_args] = msg.pose.pose
+        pose = msg.pose.pose
+        pose.position.y += callback_args
+        self.bot_pos[callback_args] = pose
 
-
-    #might need converstion to (x,y) tuple in this function?
-    def neighbor_bots(bots_pos,args):
+    def neighbor_bots(i):
         """
-        neighbor_bots takes in the bot's callback args and position of other robotss
-        Then it returns list of position of all other rots with in radius R """
-        copy_bots_pos = [deepcopy(i) for i in bots_pos] #copy it before the bot_pos gets updated,avoiding threading issue
+        Take in a bot index and returns a list of Poses for all
+        other bots within self.sensing_radius
+        """
         neighbors = []
-
-        # TODO: UNCOMMENT WHEN OTHER ARGS GET PUT IN
-        # for i in len(bots_pos): #assume args is just number for now
-        #     if (i != args) and (hp.euclid_dist(copy_bots_pos[args], copy_bots_pos[i]) <= scan_threshold):
-        #         neighbors.append(copy_bots_pos[i])
+        for j in len(self.bots_pos_copy):
+            if (j != i) and (hp.pose_euclid_dist(self.bots_pos_copy[i], self.bots_pos_copy[j]) <= self.sensing_radius):
+                neighbors.append(copy_bots_pos[i])
 
         return neighbors
 
-
-    def send_pkt(self, msg):
+    def send_pkt(self, i):
         """
-        define packet contents, then publish to appropriate topic
+        Define packet contents, then publish to appropriate topic for robot i
         """
-
-        # print msg.pose.pose
-        #use helper function to retuurn a list of positions of robots that are within
-        #R should publish this information each time with the robot's callback_args
-        #where to publish??
-        self.bots_within_R = self.neighbor_bots(self.bot_pos,callback_args)
+        neighbors = self.neighbor_bots(i)
 
         my_packet = Packet(
             centroid = self.centroid,
@@ -88,19 +78,20 @@ class Omni:
             k_a = self.k_a,
             k_b = self.k_b,
             k_c = self.k_c,
-            n = self.n,
-            others = self.others
+            n = len(neighbors) + 1,
+            others = neighbors
         )
-
-
         my_packet.header.stamp = rospy.Time.now()
-        self.pub_pkt.publish(my_packet)
+
+        self.pub[i].publish(my_packet)
 
     def run(self):
         # pass
         r = rospy.Rate(5)
         while not rospy.is_shutdown():
-            # self.send_pkt() # needs callback args to determine which topic to publish to
+            self.bot_pos_copy = deepcopy(self.bot_pos)
+            for i in range(len(self.bot_pos)):
+                self.send_pkt(i)
             r.sleep()
 
 
@@ -108,8 +99,4 @@ if __name__ == '__main__':
     node = Omni(4)
     node.run()
 
-
 # reconcile agent odoms to world coordinate systems
-
-# publish location of neighbor agents
-
