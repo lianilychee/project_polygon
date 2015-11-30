@@ -14,7 +14,7 @@ from geometry_msgs.msg import Twist, PoseWithCovariance, Pose, Point, Vector3
 from nav_msgs.msg import Odometry
 import numpy as np
 import math
-import agent
+from agent import Agent
 import helper_funcs as hp
 from copy import deepcopy
 from project_polygon.msg import Packet
@@ -30,9 +30,9 @@ class Omni:
 
         # set all constants
         self.centroid = (5.0, 0.0)
-        self.k_a = 0.8
+        self.k_a = 0.08
         self.k_b = 0.2
-        self.k_c = 0.8
+        self.k_c = 0.08
         self.R = 2
 
         self.sensing_radius = 5 # sensing radius of each robot
