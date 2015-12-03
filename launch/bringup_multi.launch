@@ -8,6 +8,12 @@
   <arg name="robot" default=""/>
 
   <group ns="$(arg robot)">
+    <include file="$(find ar_pose)/launch/ar_pose_multi.launch"/>
+
+    <node name="star_pose" pkg="my_pf" type="star_center_position.py">
+     <param name="odom_frame" value="$(arg robot)_odom"/>
+    </node>
+
     <include file="$(find neato_node)/launch/bringup_minimal.launch">
       <arg name="host" value="$(arg host)"/>
     </include>
@@ -20,3 +26,6 @@
     </include>
   </group>
 </launch>
+
+
+
