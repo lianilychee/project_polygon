@@ -110,6 +110,7 @@ class Agent:
         self.xy_vel = self.xy_vel + (acc * tau)    # new velocity = old velocity + (acceleration * timestep)
 
         self.xy_vel[self.xy_vel > 0.5] = 0.5  # set neato vel upper bound
+        self.xy_vel[self.xy_vel < -0.5] = -0.5  # set neato vel lower bound
 
     def move_bot(self):
         """
@@ -120,13 +121,21 @@ class Agent:
             return
 
         self.calc_vels()    # sets self.xy_vel
+       
         res_vel = complex(*self.xy_vel) # using complex number to represent vector
+        
         magnitude = abs(res_vel)
         angle = np.angle(res_vel)
         angle_diff = hp.angle_diff(angle, self.yaw)    #for now, assume current angle is consistant with world
- 
-        self.command.linear.x = self.k_px * magnitude
-        self.command.angular.z = self.k_pz * angle_diff
+        
+        if self.xy_vel[0]>0:
+            x_vel = magnitude * math.cos(angle_diff) 
+        else:
+            x_vel = 0
+        y_vel = magnitude * math.sin(angle_diff) 
+
+        self.command.linear.x = self.k_px * x_vel
+        self.command.angular.z = self.k_pz * y_vel
         self.pub.publish(self.command)
 
     def run(self):
