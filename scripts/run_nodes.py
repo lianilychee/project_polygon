@@ -33,7 +33,6 @@ def run_agent(i):
 
 
 if __name__ == '__main__':
-    print type(sys.argv[1])
     num = int(sys.argv[1])
 
     processes = []
