@@ -11,7 +11,7 @@
     
     <include file="$(find project_polygon)/launch/ar_pose_multi.launch"/>
 
-    <node name="star_pose" pkg="my_pf" type="star_center_position.py">
+    <node name="star_pose" pkg="project_polygon" type="star_center_position.py">
      <param name="robot_name" value="$(arg robot)"/>
      <param name="pose_correction" value="0.55"/>
     </node>
