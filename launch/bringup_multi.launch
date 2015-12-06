@@ -8,9 +8,19 @@
   <arg name="robot" default=""/>
 
   <group ns="$(arg robot)">
-    <include file="$(find neato_node)/launch/bringup_minimal.launch">
+    
+    <include file="$(find project_polygon)/launch/ar_pose_multi.launch"/>
+
+    <node name="star_pose" pkg="project_polygon" type="star_center_position.py">
+     <param name="robot_name" value="$(arg robot)"/>
+     <param name="pose_correction" value="0.55"/>
+    </node>
+
+    <include file="$(find project_polygon)/launch/bringup_minimal_rev2.launch">
       <arg name="host" value="$(arg host)"/>
+      <arg name="robot" value="$(arg robot)"/> 
     </include>
+
     <include file="$(find gscam)/examples/raspi_nodelet_udp.launch">
       <arg name="host" value="$(arg host)"/>
       <arg name="receive_port" value="$(arg receive_port)"/>
@@ -18,5 +28,7 @@
       <arg name="height" value="$(arg height)"/>
       <arg name="fps" value="$(arg fps)"/>
     </include>
+
   </group>
+
 </launch>
