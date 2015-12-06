@@ -8,6 +8,7 @@ import rospy
 from geometry_msgs.msg import Pose, Point
 from project_polygon.msg import Packet
 
+
 class PacketSender(object):
     """
     Node for sending Packets
