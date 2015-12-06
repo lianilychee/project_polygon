@@ -121,21 +121,21 @@ class Agent:
             return
 
         self.calc_vels()    # sets self.xy_vel
-       
+        
         res_vel = complex(*self.xy_vel) # using complex number to represent vector
         
         magnitude = abs(res_vel)
         angle = np.angle(res_vel)
-        angle_diff = hp.angle_diff(angle, self.yaw)    #for now, assume current angle is consistant with world
+        angle_diff = hp.angle_diff(angle, self.yaw)
         
-        if self.xy_vel[0]>0:
-            x_vel = magnitude * math.cos(angle_diff) 
-        else:
-            x_vel = 0
-        y_vel = magnitude * math.sin(angle_diff) 
-
-        self.command.linear.x = self.k_px * x_vel
-        self.command.angular.z = self.k_pz * y_vel
+        l_vel = magnitude * math.cos(angle_diff) #converting xy_vel parallel to robot heading component into linear velocity 
+        a_vel = magnitude * math.sin(angle_diff) #converting xy_vel perpendicular to robot heading component into angular velocity 
+        if l_vel < 0:   # to prevent the robot from driving backwards, we stop the robot's linear velocity and make it rotate
+            l_vel = 0
+            a_vel = math.copysign(0.5 , angle_diff)
+       
+        self.command.linear.x = self.k_px * l_vel
+        self.command.angular.z = self.k_pz * a_vel
         self.pub.publish(self.command)
 
     def run(self):
