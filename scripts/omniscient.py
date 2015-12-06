@@ -10,7 +10,7 @@ TODO: Going to just assume that this is a single robot for now...
 import rospy
 import tf
 from sensor_msgs.msg import LaserScan, Image
-from geometry_msgs.msg import Twist, PoseWithCovariance, Pose, Point, Vector3
+from geometry_msgs.msg import Twist, PoseWithCovariance, Pose, Point, Vector3, PoseArray
 from nav_msgs.msg import Odometry
 import numpy as np
 import math
@@ -29,11 +29,11 @@ class Omni:
         rospy.init_node('omniscient')
 
         # set all constants
-        self.centroid = (5.0, 0.0)
-        self.k_a = 0.08
+        self.centroid = (1.5, 1.0)
+        self.k_a = 0.2
         self.k_b = 0.2
         self.k_c = 0.08
-        self.R = 2
+        self.R = 1
 
         self.sensing_radius = 5 # sensing radius of each robot
 
@@ -97,7 +97,9 @@ class Omni:
 
 
 if __name__ == '__main__':
-    node = Omni(4)
+    import sys
+    n = int(sys.argv[1])
+    node = Omni(n)
     node.run()
 
 # reconcile agent odoms to world coordinate systems
