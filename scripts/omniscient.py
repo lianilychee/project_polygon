@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
 """
-Instantiates all agents, and knows all information of regarding all agents.  Reconcile agent base_links to world coordinate frame.  Sends packet information to each agent for individual path-planning.
+Instantiates all agents, and knows all information of regarding all agents.
+Reconcile agent base_links to world coordinate frame.
+Sends packet information to each agent for individual path-planning.
 bot 1 @ (0,0)
 bot 2 @ (10, 1)
 bot 3 @ (3, 3)
 TODO: Going to just assume that this is a single robot for now...
 """
+
 import rospy
 import tf
 from sensor_msgs.msg import LaserScan, Image
@@ -23,7 +26,8 @@ from project_polygon.msg import Packet
 class Omni:
     def __init__(self, n):
         """
-        Omni init class sets the variables, gets the robots' position, and publishes to packet for instances of Agent to subscribe to. 
+        Omni init class sets the variables, gets the robots' position, and
+        publishes to packet for instances of Agent to subscribe to.
         """
 
         rospy.init_node('omniscient')
@@ -35,10 +39,13 @@ class Omni:
         self.k_c = 0.08
         self.R = 1
 
-        self.sensing_radius = 5 # sensing radius of each robot
+        self.sensing_radius = 5  # sensing radius of each robot
 
-        self.bot_pos = [None] * n   # create empty list with a size of num of robots 
-        self.bot_pos_copy = [None] * n  # copy of bot positions to guard against threading shenanigans
+        # create empty list with a size of num of robots
+        self.bot_pos = [None] * n
+
+        # copy of bot positions to guard against threading shenanigans
+        self.bot_pos_copy = [None] * n
 
         # subscribe to all bots and create packet publishers for each
         self.pub = []
@@ -54,7 +61,7 @@ class Omni:
         pose.position.y += callback_args
         self.bot_pos[callback_args] = pose
 
-    def neighbor_bots(self , i):
+    def neighbor_bots(self, i):
         """
         Take in a bot index and returns a list of Poses for all
         other bots within self.sensing_radius

@@ -11,6 +11,7 @@ import sys
 import termios
 import helper_funcs as hp
 
+
 def run_omniscient(num):
     """
     Use subprocess to call 'rosrun project_polygon omniscient.py'
@@ -20,6 +21,7 @@ def run_omniscient(num):
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc
+
 
 def run_agent(i):
     """
@@ -45,7 +47,7 @@ if __name__ == '__main__':
 
     print 'Ctrl-C to quit and close nodes'
 
-    # Wait for Ctrl-C 
+    # Wait for Ctrl-C
     settings = termios.tcgetattr(sys.stdin)
     key = None
     while key != '\x03':
