@@ -26,8 +26,8 @@ class Omni:
 
         # set all constants
         self.centroid = (0.8, -1.4)
-        self.k_a = 0.2
-        self.k_b = 0.2
+        self.k_a = 0.08
+        self.k_b = 0.3
         self.k_c = 0.08
         self.R = 0.75
 
