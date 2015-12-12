@@ -8,12 +8,11 @@
   <arg name="robot" default=""/>
 
   <group ns="$(arg robot)">
-    
     <include file="$(find project_polygon)/launch/ar_pose_multi.launch"/>
 
-    <node name="star_pose" pkg="project_polygon" type="star_center_position.py">
-     <param name="robot_name" value="$(arg robot)"/>
-     <param name="pose_correction" value="0.55"/>
+    <node name="star_center_positioning_node" pkg="project_polygon" type="star_center_position_revised.py">
+      <param name="robot_name" value="$(arg robot)"/>
+      <param name="pose_correction" value="0.55"/>
     </node>
 
     <include file="$(find project_polygon)/launch/bringup_minimal_rev2.launch">
@@ -28,7 +27,5 @@
       <arg name="height" value="$(arg height)"/>
       <arg name="fps" value="$(arg fps)"/>
     </include>
-
   </group>
-
 </launch>
