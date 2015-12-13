@@ -23,6 +23,7 @@ class Agent:
         Initialize node. Takes in an index (e.g. '1')
         """
         rospy.init_node('agent', anonymous=True)
+        rospy.on_shutdown(self.stop_bot)
 
         # previous state for velocity calculation
         self.last_stamp = rospy.Time.now()
@@ -149,11 +150,19 @@ class Agent:
         self.command.angular.z = self.k_pz * a_vel
         self.pub.publish(self.command)
 
+    def stop_bot(self):
+        """
+        Callback to stop the robot on shutdown (not guaranteed to work).
+        """
+        self.pub.publish(Twist())
+        rospy.sleep(1)
+
     def run(self):
         r = rospy.Rate(5)
         while not rospy.is_shutdown():
             self.move_bot()
             r.sleep()
+
 
 if __name__ == '__main__':
     import sys
