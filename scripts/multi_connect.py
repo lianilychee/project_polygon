@@ -32,7 +32,7 @@ def connect(ip, namespace, port, fps=10):
 
     try:
         pose_correction, phase_offset = STAR_CORRECTIONS[ip]
-    except:
+    except KeyError:
         pose_correction, phase_offset = 0.0, 0.0
 
     args = args.format(ip, namespace, port, fps, pose_correction, phase_offset)
