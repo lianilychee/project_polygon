@@ -2,7 +2,7 @@
   <node name="ar_pose" pkg="ar_pose" type="ar_multi" respawn="false"
     output="screen">
     <param name="marker_pattern_list" type="string"
-      value="$(find ar_pose)/data/object_4x4"/>
+      value="$(find ar_pose)/data/object_5_markers"/>
     <param name="threshold" type="int" value="100"/>
     <param name="publish_tf" type="bool" value="false"/>
   </node>
