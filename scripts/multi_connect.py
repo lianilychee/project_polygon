@@ -14,13 +14,28 @@ import sys
 import termios
 import helper_funcs as hp
 
+STAR_CORRECTIONS = {
+    '192.168.17.201': (0.456, -0.482),
+    '192.168.17.202': (0.578, 0.037),
+    '192.168.17.205': (0.261, -0.706),
+    '192.168.17.207': (0.170, -2.06)
+}
+
 def connect(ip, namespace, port, fps=10):
     """
     Use subprocess to call 'roslaunch project_polygon bringup_multi.launch'
     with the given parameters, return process so it can be killed later
     """
     cmd = ['roslaunch', 'project_polygon', 'bringup_multi.launch']
-    args = 'host:={} robot:={} receive_port:={} fps:={}'.format(ip, namespace, port, fps)
+    args = '''host:={} robot:={} receive_port:={} fps:={} pose_correction:={}
+              phase_offset:={}'''
+
+    try:
+        pose_correction, phase_offset = STAR_CORRECTIONS[ip]
+    except KeyError:
+        pose_correction, phase_offset = 0.0, 0.0
+
+    args = args.format(ip, namespace, port, fps, pose_correction, phase_offset)
     cmd.extend(shlex.split(args))
 
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

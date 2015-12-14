@@ -6,13 +6,16 @@
   <arg name="height" default="480"/>
   <arg name="fps" default="30"/>
   <arg name="robot" default=""/>
+  <arg name="pose_correction" default=""/>
+  <arg name="phase_offset" default=""/>
 
   <group ns="$(arg robot)">
     <include file="$(find project_polygon)/launch/ar_pose_multi.launch"/>
 
     <node name="star_center_positioning_node" pkg="project_polygon" type="star_center_position_revised.py">
       <param name="robot_name" value="$(arg robot)"/>
-      <param name="pose_correction" value="0.55"/>
+      <param name="pose_correction" value="$(arg pose_correction)"/>
+      <param name="phase_offset" value="$(arg phase_offset)"/>
     </node>
 
     <include file="$(find project_polygon)/launch/bringup_minimal_rev2.launch">
