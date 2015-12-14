@@ -114,6 +114,8 @@ class MarkerProcessor(object):
         self.add_marker_locator(MarkerLocator(2,(0.0,10*12*2.54/100.0), 0))
         self.add_marker_locator(MarkerLocator(3,(-6*12*2.54/100.0,6*12*2.54/100.0),0))
         self.add_marker_locator(MarkerLocator(4,(0.0, 6*12*2.54/100), pi))
+        self.add_marker_locator(MarkerLocator(5,(-4*12*2.54/100.0,14*12*2.54/100.0),pi))
+
 
         self.pose_correction = rospy.get_param('~pose_correction',0.0)
         self.phase_offset = rospy.get_param('~phase_offset',0.0)
