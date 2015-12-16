@@ -7,7 +7,8 @@ Sends packet information to each agent for individual path-planning.
 """
 
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import (PoseStamped, PoseArray, PointStamped,
+                              PolygonStamped, Point32)
 import numpy as np
 import math
 import helper_funcs as hp
@@ -26,9 +27,9 @@ class Omni:
 
         # set all constants
         self.centroid = (0.8, -1.4)
-        self.k_a = 0.2
-        self.k_b = 0.2
-        self.k_c = 0.08
+        self.k_a = 1.0
+        self.k_b = 0.5
+        self.k_c = 0.2
         self.R = 0.75
 
         self.sensing_radius = 5  # sensing radius of each robot
@@ -44,6 +45,11 @@ class Omni:
         for i in range(n):
             rospy.Subscriber('/robot{}/STAR_pose_continuous'.format(i), PoseStamped, self.get_pos, callback_args=i)
             self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=10))
+
+        # create publishers for visualizations
+        self.centroid_pub = rospy.Publisher('/centroid', PointStamped, queue_size=10)
+        self.arena_pub = rospy.Publisher('/arena', PolygonStamped, queue_size=10)
+        self.robot_poses_pub = rospy.Publisher('/robot_poses', PoseArray, queue_size=10)
 
     def get_pos(self, msg, callback_args):
         """
@@ -83,9 +89,33 @@ class Omni:
         self.pub[i].publish(my_packet)
 
     def run(self):
-        # pass
         r = rospy.Rate(5)
         while not rospy.is_shutdown():
+            # Publish centroid for visualization
+            my_point = PointStamped()
+            my_point.header.frame_id = 'STAR'
+            my_point.point.x = self.centroid[0]
+            my_point.point.y = self.centroid[1]
+            self.centroid_pub.publish(my_point)
+            
+            # Publish arena bounds for visualization
+            my_polygon = PolygonStamped()
+            my_polygon.header.frame_id = 'STAR'
+            my_polygon.polygon.points = [
+                Point32(x=-0.55, y=0.55, z=0),
+                Point32(x=-0.55, y=-4, z=0),
+                Point32(x=2.5, y=-4, z=0),
+                Point32(x=2.5, y=0.55, z=0),
+            ]
+            self.arena_pub.publish(my_polygon)
+
+            # Publish robot poses for visualization
+            my_posearray = PoseArray()
+            my_posearray.header.frame_id = 'STAR'
+            my_posearray.poses = [p for p in self.bot_pos if p is not None]
+            self.robot_poses_pub.publish(my_posearray)
+
+            # If we have received a pose for all robots, start sending packets
             if not None in self.bot_pos:
                 self.bot_pos_copy = deepcopy(self.bot_pos)
                 for i in range(len(self.bot_pos)):
