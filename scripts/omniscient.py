@@ -27,12 +27,12 @@ class Omni:
 
         # set all constants
         self.centroid = (0.8, -1.4)
-        self.k_a = 1.0
-        self.k_b = 0.5
+        self.k_a = 0.12
+        self.k_b = 0.3
         self.k_c = 0.2
         self.R = 0.75
 
-        self.sensing_radius = 5  # sensing radius of each robot
+        self.sensing_radius = 2  # sensing radius of each robot
 
         # create empty list with a size of num of robots
         self.bot_pos = [None] * n

@@ -6,7 +6,8 @@ information in the packets.
 """
 
 import rospy
-from geometry_msgs.msg import Twist, PoseStamped
+from geometry_msgs.msg import Twist, PoseStamped, Point
+from visualization_msgs.msg import Marker
 from project_polygon.msg import Packet
 import numpy as np
 import math
@@ -52,6 +53,9 @@ class Agent:
         rospy.Subscriber('robot{}/packet'.format(i), Packet, self.assign_data)
         rospy.Subscriber('robot{}/STAR_pose_continuous'.format(i), PoseStamped, self.assign_odom)
         self.pub = rospy.Publisher('robot{}/cmd_vel'.format(i), Twist, queue_size=10)
+
+        # create publishers for visualizations
+        self.velocity_vector_pub = rospy.Publisher('robot{}/velocity_vector'.format(i), Marker, queue_size=10)
 
     def assign_odom(self, msg):
         """
@@ -115,8 +119,18 @@ class Agent:
         # new velocity = old velocity + (acceleration * timestep)
         self.xy_vel = self.xy_vel + (acc * tau)
 
-        self.xy_vel[self.xy_vel > 0.5] = 0.5  # set neato vel upper bound
-        self.xy_vel[self.xy_vel < -0.5] = -0.5  # set neato vel lower bound
+        self.xy_vel[self.xy_vel > 0.1] = 0.1  # set neato vel upper bound
+        self.xy_vel[self.xy_vel < -0.1] = -0.1  # set neato vel lower bound
+
+        # publish visualization of resultant velocity
+        my_vector = Marker()
+        my_vector.header.frame_id = 'STAR'
+        my_vector.type = 0 # arrow
+        my_vector.points = [
+            Point(x=self.x, y=self.y),
+            Point(x=self.x+xy_vel[0], y=self.y+xy_vel[1])
+        ]
+        self.velocity_vector_pub.publish(my_vector)
 
     def move_bot(self):
         """
