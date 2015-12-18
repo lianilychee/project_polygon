@@ -26,12 +26,12 @@ class Omni:
 
         # set all constants
         self.centroid = (0.8, -1.4)
-        self.k_a = 0.2
-        self.k_b = 0.2
+        self.k_a = 0.08
+        self.k_b = 0.3
         self.k_c = 0.08
         self.R = 0.75
 
-        self.sensing_radius = 5  # sensing radius of each robot
+        self.sensing_radius = 2  # sensing radius of each robot
 
         # create empty list with a size of num of robots
         self.bot_pos = [None] * n
@@ -43,7 +43,7 @@ class Omni:
         self.pub = []
         for i in range(n):
             rospy.Subscriber('/robot{}/STAR_pose_continuous'.format(i), PoseStamped, self.get_pos, callback_args=i)
-            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=10))
+            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=1))
 
     def get_pos(self, msg, callback_args):
         """
@@ -84,7 +84,7 @@ class Omni:
 
     def run(self):
         # pass
-        r = rospy.Rate(5)
+        r = rospy.Rate(20)
         while not rospy.is_shutdown():
             if not None in self.bot_pos:
                 self.bot_pos_copy = deepcopy(self.bot_pos)
