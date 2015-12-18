@@ -102,10 +102,10 @@ class Omni:
             my_polygon = PolygonStamped()
             my_polygon.header.frame_id = 'STAR'
             my_polygon.polygon.points = [
-                Point32(x=-0.55, y=0.55, z=0),
-                Point32(x=-0.55, y=-4, z=0),
-                Point32(x=2.5, y=-4, z=0),
-                Point32(x=2.5, y=0.55, z=0),
+                Point32(x=-0.87, y=0.53, z=0),
+                Point32(x=-0.87, y=-3.73, z=0),
+                Point32(x=2.2, y=-3.73, z=0),
+                Point32(x=2.2, y=0.53, z=0),
             ]
             self.arena_pub.publish(my_polygon)
 
