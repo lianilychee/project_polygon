@@ -44,7 +44,7 @@ class Omni:
         self.pub = []
         for i in range(n):
             rospy.Subscriber('/robot{}/STAR_pose_continuous'.format(i), PoseStamped, self.get_pos, callback_args=i)
-            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=10))
+            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=1))
 
         # create publishers for visualizations
         self.centroid_pub = rospy.Publisher('/centroid', PointStamped, queue_size=10)
