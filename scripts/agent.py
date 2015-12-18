@@ -54,7 +54,14 @@ class Agent:
         rospy.Subscriber('robot{}/STAR_pose_continuous'.format(i), PoseStamped, self.assign_odom)
         self.pub = rospy.Publisher('robot{}/cmd_vel'.format(i), Twist, queue_size=10)
 
-        # create publishers for visualizations
+        # create Marker and publisher for visualization
+        self.vector = Marker()
+        self.vector.header.frame_id = 'STAR'
+        self.vector.type = Marker.ARROW
+        self.vector.color.g = 1.0
+        self.vector.color.a = 1.0
+        self.vector.scale.x = 0.01
+        self.vector.scale.y = 0.05
         self.velocity_vector_pub = rospy.Publisher('robot{}/velocity_vector'.format(i), Marker, queue_size=10)
 
     def assign_odom(self, msg):
@@ -123,14 +130,12 @@ class Agent:
         self.xy_vel[self.xy_vel < -0.1] = -0.1  # set neato vel lower bound
 
         # publish visualization of resultant velocity
-        my_vector = Marker()
-        my_vector.header.frame_id = 'STAR'
-        my_vector.type = 0 # arrow
-        my_vector.points = [
+        # self.vector.header.stamp = rospy.Time.now()
+        self.vector.points = [
             Point(x=self.x, y=self.y),
-            Point(x=self.x+xy_vel[0], y=self.y+xy_vel[1])
+            Point(x=self.x+self.xy_vel[0], y=self.y+self.xy_vel[1])
         ]
-        self.velocity_vector_pub.publish(my_vector)
+        self.velocity_vector_pub.publish(self.vector)
 
     def move_bot(self):
         """
@@ -162,7 +167,7 @@ class Agent:
 
         self.command.linear.x = self.k_px * l_vel
         self.command.angular.z = self.k_pz * a_vel
-        self.pub.publish(self.command)
+        # self.pub.publish(self.command)
 
     def stop_bot(self):
         """
