@@ -130,7 +130,6 @@ class Agent:
         self.xy_vel[self.xy_vel < -0.1] = -0.1  # set neato vel lower bound
 
         # publish visualization of resultant velocity
-        # self.vector.header.stamp = rospy.Time.now()
         self.vector.points = [
             Point(x=self.x, y=self.y),
             Point(x=self.x+self.xy_vel[0], y=self.y+self.xy_vel[1])
