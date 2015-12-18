@@ -167,7 +167,7 @@ class Agent:
 
         self.command.linear.x = self.k_px * l_vel
         self.command.angular.z = self.k_pz * a_vel
-        # self.pub.publish(self.command)
+        self.pub.publish(self.command)
 
     def stop_bot(self):
         """
