@@ -4,20 +4,13 @@
 Instantiates all agents, and knows all information of regarding all agents.
 Reconcile agent base_links to world coordinate frame.
 Sends packet information to each agent for individual path-planning.
-bot 1 @ (0,0)
-bot 2 @ (10, 1)
-bot 3 @ (3, 3)
-TODO: Going to just assume that this is a single robot for now...
 """
 
 import rospy
-import tf
-from sensor_msgs.msg import LaserScan, Image
-from geometry_msgs.msg import Twist, PoseWithCovariance, Pose, Point, Vector3, PoseArray
-from nav_msgs.msg import Odometry
+from geometry_msgs.msg import (PoseStamped, PoseArray, PointStamped,
+                              PolygonStamped, Point32)
 import numpy as np
 import math
-from agent import Agent
 import helper_funcs as hp
 from copy import deepcopy
 from project_polygon.msg import Packet
@@ -33,13 +26,13 @@ class Omni:
         rospy.init_node('omniscient')
 
         # set all constants
-        self.centroid = (1.5, 1.0)
-        self.k_a = 0.2
-        self.k_b = 0.2
-        self.k_c = 0.08
-        self.R = 1
+        self.centroid = (0.8, -1.4)
+        self.k_a = 0.12
+        self.k_b = 0.3
+        self.k_c = 0.2
+        self.R = 0.75
 
-        self.sensing_radius = 5  # sensing radius of each robot
+        self.sensing_radius = 2  # sensing radius of each robot
 
         # create empty list with a size of num of robots
         self.bot_pos = [None] * n
@@ -50,16 +43,19 @@ class Omni:
         # subscribe to all bots and create packet publishers for each
         self.pub = []
         for i in range(n):
-            rospy.Subscriber('/robot{}/odom'.format(i), Odometry, self.get_pos, callback_args=i)
-            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=10))
+            rospy.Subscriber('/robot{}/STAR_pose_continuous'.format(i), PoseStamped, self.get_pos, callback_args=i)
+            self.pub.append(rospy.Publisher('/robot{}/packet'.format(i), Packet, queue_size=1))
+
+        # create publishers for visualizations
+        self.centroid_pub = rospy.Publisher('/centroid', PointStamped, queue_size=10)
+        self.arena_pub = rospy.Publisher('/arena', PolygonStamped, queue_size=10)
+        self.robot_poses_pub = rospy.Publisher('/robot_poses', PoseArray, queue_size=10)
 
     def get_pos(self, msg, callback_args):
         """
         call back function to get the position of robots to deploy to the agents.
         """
-        pose = msg.pose.pose
-        pose.position.y += callback_args
-        self.bot_pos[callback_args] = pose
+        self.bot_pos[callback_args] = msg.pose
 
     def neighbor_bots(self, i):
         """
@@ -93,9 +89,33 @@ class Omni:
         self.pub[i].publish(my_packet)
 
     def run(self):
-        # pass
         r = rospy.Rate(5)
         while not rospy.is_shutdown():
+            # Publish centroid for visualization
+            my_point = PointStamped()
+            my_point.header.frame_id = 'STAR'
+            my_point.point.x = self.centroid[0]
+            my_point.point.y = self.centroid[1]
+            self.centroid_pub.publish(my_point)
+            
+            # Publish arena bounds for visualization
+            my_polygon = PolygonStamped()
+            my_polygon.header.frame_id = 'STAR'
+            my_polygon.polygon.points = [
+                Point32(x=-0.87, y=0.53, z=0),
+                Point32(x=-0.87, y=-3.73, z=0),
+                Point32(x=2.2, y=-3.73, z=0),
+                Point32(x=2.2, y=0.53, z=0),
+            ]
+            self.arena_pub.publish(my_polygon)
+
+            # Publish robot poses for visualization
+            my_posearray = PoseArray()
+            my_posearray.header.frame_id = 'STAR'
+            my_posearray.poses = [p for p in self.bot_pos if p is not None]
+            self.robot_poses_pub.publish(my_posearray)
+
+            # If we have received a pose for all robots, start sending packets
             if not None in self.bot_pos:
                 self.bot_pos_copy = deepcopy(self.bot_pos)
                 for i in range(len(self.bot_pos)):
@@ -108,5 +128,3 @@ if __name__ == '__main__':
     n = int(sys.argv[1])
     node = Omni(n)
     node.run()
-
-# reconcile agent odoms to world coordinate systems

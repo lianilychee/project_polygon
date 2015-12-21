@@ -6,10 +6,9 @@ information in the packets.
 """
 
 import rospy
-from geometry_msgs.msg import Twist
-from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist, PoseStamped, Point
+from visualization_msgs.msg import Marker
 from project_polygon.msg import Packet
-import tf
 import numpy as np
 import math
 import helper_funcs as hp
@@ -25,13 +24,13 @@ class Agent:
         Initialize node. Takes in an index (e.g. '1')
         """
         rospy.init_node('agent', anonymous=True)
+        rospy.on_shutdown(self.stop_bot)
 
         # previous state for velocity calculation
         self.last_stamp = rospy.Time.now()
         self.xy_vel = np.array([0.0, 0.0])
 
-        # odom data
-        self.dy = i     # for makeshift world odom
+        # odom data (now using ceiling markers)
         self.x = None
         self.y = None
         self.yaw = None
@@ -52,16 +51,25 @@ class Agent:
         self.k_pz = 1.0
 
         rospy.Subscriber('robot{}/packet'.format(i), Packet, self.assign_data)
-        rospy.Subscriber('robot{}/odom'.format(i), Odometry, self.assign_odom)
+        rospy.Subscriber('robot{}/STAR_pose_continuous'.format(i), PoseStamped, self.assign_odom)
         self.pub = rospy.Publisher('robot{}/cmd_vel'.format(i), Twist, queue_size=10)
+
+        # create Marker and publisher for visualization
+        self.vector = Marker()
+        self.vector.header.frame_id = 'STAR'
+        self.vector.type = Marker.ARROW
+        self.vector.color.g = 1.0
+        self.vector.color.a = 1.0
+        self.vector.scale.x = 0.01
+        self.vector.scale.y = 0.05
+        self.velocity_vector_pub = rospy.Publisher('robot{}/velocity_vector'.format(i), Marker, queue_size=10)
 
     def assign_odom(self, msg):
         """
-        Save x, y, and yaw from odometry data
+        Save x, y, and yaw from odometry data (now using ceiling markers)
         """
-        pose = msg.pose.pose
+        pose = msg.pose
         self.x, self.y, self.yaw = hp.convert_pose_to_xy_and_theta(pose)
-        self.y += self.dy
 
     def assign_data(self, data):
         """
@@ -118,8 +126,15 @@ class Agent:
         # new velocity = old velocity + (acceleration * timestep)
         self.xy_vel = self.xy_vel + (acc * tau)
 
-        self.xy_vel[self.xy_vel > 0.5] = 0.5  # set neato vel upper bound
-        self.xy_vel[self.xy_vel < -0.5] = -0.5  # set neato vel lower bound
+        self.xy_vel[self.xy_vel > 0.1] = 0.1  # set neato vel upper bound
+        self.xy_vel[self.xy_vel < -0.1] = -0.1  # set neato vel lower bound
+
+        # publish visualization of resultant velocity
+        self.vector.points = [
+            Point(x=self.x, y=self.y),
+            Point(x=self.x+self.xy_vel[0], y=self.y+self.xy_vel[1])
+        ]
+        self.velocity_vector_pub.publish(self.vector)
 
     def move_bot(self):
         """
@@ -153,11 +168,19 @@ class Agent:
         self.command.angular.z = self.k_pz * a_vel
         self.pub.publish(self.command)
 
+    def stop_bot(self):
+        """
+        Callback to stop the robot on shutdown (not guaranteed to work).
+        """
+        self.pub.publish(Twist())
+        rospy.sleep(1)
+
     def run(self):
         r = rospy.Rate(5)
         while not rospy.is_shutdown():
             self.move_bot()
             r.sleep()
+
 
 if __name__ == '__main__':
     import sys

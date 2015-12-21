@@ -11,25 +11,25 @@ plt.axis('equal')
 
 # global variables
 pos = np.array([    # bot pos
-    (1.0, 1.0),
-    (2.0, 3.0),
-    (3.0, 2.0),
-    (5.0, -3.0),
-    (0.0, -20.0)
+    (0.0, 0.0),
+    (0.0, -1.0),
+    (0.0, -2.0)
 ])
 vel = np.zeros(pos.shape)
 acc = np.zeros(pos.shape)
-tau = 0.1           # time step
-centroid = (3, 0)
-R = 1               # desired dist betw Bot and centroid
+tau = 0.2           # time step
+centroid = (0.75, -1.0)
+R = 0.5             # desired dist betw Bot and centroid
 k_a = 0.08          # constant: betw other bots
-k_b = 0.2           # constant: acct for overshoot
+k_b = 0.3           # constant: acct for overshoot
 k_c = 0.08          # constant: betw centroid
-scan_threshold = 3  # how far a bot can "see"
+scan_threshold = 5  # how far a bot can "see"
 
 # show centroid region
 region = plt.Circle(centroid, R, color='r')
 plt.gcf().gca().add_artist(region)
+
+plt.title('k_a = {}, k_b = {}, k_c = {}'.format(k_a, k_b, k_c))
 
 def euclid_dist(pt1, pt2):
     return math.sqrt((pt1[0] - pt2[0])**2 + (pt1[1] - pt2[1])**2)
@@ -68,6 +68,7 @@ while True:
         pos_temp[i] = pos[i] + vel[i] * tau
 
     vel_temp[vel_temp > 0.5] = 0.5  # set neato vel upper bound
+    vel_temp[vel_temp < -0.5] = -0.5  # set neato vel lower bound
 
     # update positions and velocities
     pos = pos_temp
